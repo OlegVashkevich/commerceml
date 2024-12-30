@@ -6,8 +6,37 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"log"
+	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
 )
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	//get godotenv
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	envLogin := os.Getenv("login")
+	envPassword := os.Getenv("password")
+
+	//A - http://<сайт>/<путь> /1c_exchange.php?type=catalog&mode=checkauth.
+	if r.URL.Query().Get("type") == "catalog" &&
+		r.URL.Query().Get("mode") == "checkauth" {
+		//Check Basic HTTP Auth
+		username, password, ok := r.BasicAuth()
+		if ok && envLogin == username && envPassword == password {
+			fmt.Printf("%#v\n", username)
+			fmt.Printf("%#v\n", password)
+			fmt.Fprintf(w, "success")
+		} else {
+			fmt.Fprintf(w, "fail")
+		}
+	}
+}
 
 func main() {
 	//import0_1
@@ -61,4 +90,7 @@ func main() {
 	}
 
 	fmt.Printf("%#v\n", data2.ИзмененияПакетаПредложений.Предложения.Предложение[0])
+
+	http.HandleFunc("/exchange1c.php", handler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
